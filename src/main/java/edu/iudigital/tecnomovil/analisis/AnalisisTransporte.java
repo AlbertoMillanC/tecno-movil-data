@@ -18,6 +18,7 @@ public class AnalisisTransporte {
 
     public static Map<String, Long> afluenciaPorEstacion(List<Registro> registros) {
         return registros.stream()
+                .filter(Registro::esEntrada)
                 .collect(Collectors.collectingAndThen(
                         Collectors.groupingBy(Registro::estacion, TreeMap::new, Collectors.counting()),
                         Collections::unmodifiableMap));
@@ -34,7 +35,7 @@ public class AnalisisTransporte {
     public static List<FranjaHoraria> horasPico(List<Registro> registros, int cuantas) {
         return flujoPorHora(registros).entrySet().stream()
                 .map(entrada -> new FranjaHoraria(entrada.getKey(), entrada.getValue()))
-                .sorted(Comparator.comparingLong(FranjaHoraria::flujo))
+                .sorted(Comparator.comparingLong(FranjaHoraria::flujo).reversed())
                 .limit(cuantas)
                 .toList();
     }
