@@ -1,0 +1,122 @@
+@startuml TecnoMovilData
+skinparam classAttributeIconSize 0
+skinparam shadowing false
+hide empty members
+
+package modelo {
+  enum Accion {
+    ENTRADA
+    SALIDA
+  }
+
+  class Registro <<record>> {
+    + idUsuario : String
+    + ruta : String
+    + estacion : String
+    + accion : Accion
+    + timestamp : LocalDateTime
+    + esEntrada() : boolean
+    + esSalida() : boolean
+    + hora() : int
+  }
+
+  class FranjaHoraria <<record>> {
+    + hora : int
+    + flujo : long
+    + etiqueta() : String
+  }
+
+  class UsoRuta <<record>> {
+    + ruta : String
+    + validaciones : long
+  }
+
+  class Tramo <<record>> {
+    + origen : String
+    + destino : String
+    + etiqueta() : String
+  }
+
+  class RutaCritica <<record>> {
+    + ruta : String
+    + ocupacion : long
+    + umbral : long
+    + porcentajeSobreUmbral() : double
+  }
+}
+
+package datos {
+  class CatalogoRed <<utility>> {
+    + {static} RUTAS : List<String>
+    + {static} ESTACIONES_POR_RUTA : Map
+    + {static} PESO_DE_DEMANDA : Map
+    + {static} estacionesDe(ruta) : List<String>
+  }
+
+  class GeneradorRegistros <<utility>> {
+    + {static} generar(usuarios, semilla) : List<Registro>
+    - {static} viajesDeUnUsuario(indice, aleatorio) : Stream<Registro>
+    - {static} rutaSegunDemanda(aleatorio) : String
+    - {static} primeraSalida(aleatorio) : LocalDateTime
+  }
+}
+
+package analisis {
+  class AnalisisTransporte <<utility>> {
+    + {static} afluenciaPorEstacion(registros) : Map<String, Long>
+    + {static} flujoPorHora(registros) : Map<Integer, Long>
+    + {static} horasPico(registros, cuantas) : List<FranjaHoraria>
+    + {static} rutasMasUtilizadas(registros, cuantas) : List<UsoRuta>
+    + {static} patronesDeViaje(registros) : Map<String, List<String>>
+    + {static} tiempoPromedioEntreEstaciones(registros) : Map<Tramo, Duration>
+    + {static} rutasCriticas(registros, umbral) : List<RutaCritica>
+  }
+
+  class Operadores <<utility>> {
+    + {static} contarPor(registros, clasificador) : Map<K, Long>
+    + {static} enFranja(inicio, fin) : Predicate<Registro>
+    + {static} deRuta(ruta) : Predicate<Registro>
+    + {static} esEntrada() : Predicate<Registro>
+    + {static} filtrar(registros, criterio) : List<Registro>
+    + {static} rankingDeEstaciones(cuantas) : Function
+  }
+
+  class Medicion <<utility>> {
+    + {static} afluenciaEnParalelo(registros) : Map<String, Long>
+    + {static} calentar(registros) : void
+    + {static} milisegundosDe(operacion, registros) : long
+  }
+}
+
+package reporte {
+  class Reporte <<utility>> {
+    + {static} titulo(texto) : void
+    + {static} afluencia(conteos) : void
+    + {static} horasPico(franjas) : void
+    + {static} rutas(rutas) : void
+    + {static} patrones(patrones, cuantos) : void
+    + {static} tramos(promedios, cuantos) : void
+    + {static} criticas(rutas) : void
+  }
+}
+
+class Main {
+  + {static} main(args) : void
+}
+
+Registro --> Accion : usa
+GeneradorRegistros ..> CatalogoRed : consulta
+GeneradorRegistros ..> Registro : produce
+AnalisisTransporte ..> Registro : consume
+AnalisisTransporte ..> FranjaHoraria : produce
+AnalisisTransporte ..> UsoRuta : produce
+AnalisisTransporte ..> Tramo : produce
+AnalisisTransporte ..> RutaCritica : produce
+Operadores ..> Registro : consume
+Medicion ..> AnalisisTransporte : mide
+Main ..> GeneradorRegistros
+Main ..> AnalisisTransporte
+Main ..> Operadores
+Main ..> Medicion
+Main ..> Reporte
+@enduml
